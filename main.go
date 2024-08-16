@@ -1,15 +1,14 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/url"
-	"os"
 	"os/exec"
 	"path"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -48,17 +47,15 @@ func main() {
 
 	//Create a new cancellable background context. Calling `cancel()` leads to the cancellation of the context
 	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
 
 	// `updates` is a golang channel which receives telegram updates
 	updates := bot.GetUpdatesChan(u)
 
 	// Pass cancellable context to goroutine
 	go receiveUpdates(ctx, updates)
-	log.Println("Start listening for updates. Press enter to stop")
+	log.Println("Start listening for updates.")
 
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
-	cancel()
+	runtime.Goexit()
 
 }
 
