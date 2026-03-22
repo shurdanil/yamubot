@@ -12,8 +12,9 @@ import (
 	"strconv"
 	"strings"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"main/functions"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 var (
@@ -33,10 +34,14 @@ func main() {
 	config = functions.CreateConfig()
 
 	var err error
-	bot, err = tgbotapi.NewBotAPI(config.Token)
-	if err != nil {
-		// Abort if something is wrong
-		log.Panic(err)
+	for {
+		bot, err = tgbotapi.NewBotAPI(config.Token)
+		if err != nil {
+			// Abort if something is wrong
+			log.Println(err)
+			continue
+		}
+		break
 	}
 
 	// Set this to true to log all interactions with telegram servers
@@ -45,7 +50,7 @@ func main() {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
-	//Create a new cancellable background context. Calling `cancel()` leads to the cancellation of the context
+	// Create a new cancellable background context. Calling `cancel()` leads to the cancellation of the context
 	ctx := context.Background()
 
 	// `updates` is a golang channel which receives telegram updates
@@ -130,19 +135,28 @@ func handleMessage(message *tgbotapi.Message) {
 	track := trackInfo.Result.Track
 
 	reply := `
-Track  - <a href="%s">%s</a>
-Album  - <a href="%s">%s</a> - %d, %s
-Artist - <a href="%s">%s</a>`
-	msg = tgbotapi.NewMessage(message.Chat.ID,
-		fmt.Sprintf(reply,
-			text,
-			track.Title,
+<a href="%s">%s</a> - <a href="%s">%s</a>
+%s
+`
+
+	var albumPart string
+	if len(track.Albums) != 0 {
+		albumPart = fmt.Sprintf(`Album - <a href="%s">%s</a> - %d
+#%s`,
 			"https://music.yandex.ru/album/"+strconv.Itoa(track.Albums[0].Id),
 			track.Albums[0].Title,
 			track.Albums[0].Year,
 			track.Albums[0].Genre,
+		)
+	}
+
+	msg = tgbotapi.NewMessage(message.Chat.ID,
+		fmt.Sprintf(reply,
+			strings.Split(text, "?")[0],
+			track.Title,
 			"https://music.yandex.ru/artist/"+strconv.Itoa(track.Artists[0].Id),
 			track.Artists[0].Name,
+			albumPart,
 		))
 	msg.ParseMode = tgbotapi.ModeHTML
 	_, err = bot.Send(msg)
